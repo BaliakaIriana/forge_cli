@@ -131,7 +131,8 @@ final class DataSourceGenerator extends GeneratorCommand {
   List<String> get aliases => const ['datasource', 'ds'];
   @override
   String get description =>
-      'Remote data source (Retrofit client or Dio), registered in DI.';
+      'Remote data source (Retrofit, Dio, or client-free with network: none), '
+      'registered in DI.';
   @override
   String get namePrompt => 'Data source name (e.g. orders)';
 

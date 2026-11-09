@@ -31,7 +31,7 @@ dev_dependencies:
   forge_cli:
     git:
       url: https://github.com/BaliakaIriana/forge_cli.git
-      ref: v0.1.0
+      ref: v0.2.0
 ```
 
 Then run it from anywhere inside the project:
@@ -75,7 +75,7 @@ Chosen at `forge init` (pre-selected from `pubspec.yaml`), stored in `forge.yaml
 | State | `bloc` (flutter_bloc), `riverpod` (riverpod_generator) |
 | DI | `get_it` (registrations written in the DI file), `injectable` (annotations), `riverpod` (provider chain per feature) |
 | Routing | `go_router` (+ `AppRoutes` path constants), `auto_route` (`@RoutePage`) |
-| Network | `retrofit` (`@RestApi`), `dio` (interface + Dio implementation) |
+| Network | `retrofit` (`@RestApi`), `dio` (interface + Dio implementation), `none` (interface + implementation without client: inject your own, e.g. Supabase) |
 | Data classes | `equatable` + `json_serializable`, `freezed` |
 | Either | `fpdart`, `dartz` |
 | JSON keys | `none`, `snake`, `pascal`, `kebab`, `screaming_snake` (`fieldRename`) |
@@ -117,7 +117,7 @@ generator never duplicates a registration or a route.
 Generated code imports a few project files, located by `forge init`
 (`core:` in `forge.yaml`) or scaffolded on request: `Failure` hierarchy,
 `FutureEither<T>` typedef, `runTask()`, DI file (`getIt`), router, `AppRoutes`,
-and `dioProvider` with Riverpod.
+and `dioProvider` with Riverpod DI and a Dio-based network.
 
 ## After generating
 

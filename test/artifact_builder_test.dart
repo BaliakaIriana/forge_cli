@@ -148,4 +148,43 @@ void main() {
     expect(
         plan.notes.single, contains('registerLazySingleton<OrdersRepository>'));
   });
+
+  group('network: none', () {
+    for (final di in [
+      DependencyInjection.getIt,
+      DependencyInjection.riverpod
+    ]) {
+      test('client-free data source, no Dio anywhere (${di.id})', () {
+        final riverpod = di == DependencyInjection.riverpod;
+        final (builder, plan) = _setUp(StackConfig(
+          state: riverpod ? StateManagement.riverpod : StateManagement.bloc,
+          di: di,
+          network: Network.none,
+        ));
+        builder.feature(plan, Name('orders'));
+
+        final ds = plan
+            .read('$_base/data/data_sources/orders_remote_data_source.dart')!;
+        expect(ds, contains('abstract interface class OrdersRemoteDataSource'));
+        expect(ds, contains('const OrdersRemoteDataSourceImpl();'));
+        expect(ds, contains("throw UnimplementedError('getOrders');"));
+        for (final change in plan.changes) {
+          expect(change.content, isNot(contains('Dio')), reason: change.path);
+        }
+        expect(plan.exists(CorePaths.defaults.dioProvider!), isFalse);
+
+        if (riverpod) {
+          expect(
+            plan.read('$_base/presentation/providers/orders_dependencies.dart'),
+            contains('const OrdersRemoteDataSourceImpl();'),
+          );
+        } else {
+          expect(
+            plan.read(CorePaths.defaults.di),
+            contains('() => const OrdersRemoteDataSourceImpl(),'),
+          );
+        }
+      });
+    }
+  });
 }

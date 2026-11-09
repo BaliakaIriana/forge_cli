@@ -67,9 +67,11 @@ final class ProjectDetector {
       router: packages.contains('auto_route')
           ? Routing.autoRoute
           : Routing.goRouter,
-      network: packages.contains('retrofit') || !packages.contains('dio')
+      network: packages.contains('retrofit')
           ? Network.retrofit
-          : Network.dio,
+          : packages.contains('dio')
+              ? Network.dio
+              : Network.none,
       dataClass: packages.contains('freezed_annotation')
           ? DataClass.freezed
           : DataClass.equatable,

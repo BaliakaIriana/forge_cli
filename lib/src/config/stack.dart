@@ -52,13 +52,24 @@ enum Routing implements StackOption {
 
 enum Network implements StackOption {
   retrofit('retrofit', 'Dio + Retrofit (@RestApi clients)'),
-  dio('dio', 'Dio, hand-written data sources');
+  dio('dio', 'Dio, hand-written data sources'),
+  none(
+    'none',
+    'No client: data source interface + implementation, inject your own '
+        'dependencies (Supabase, Firebase, local DB...)',
+  );
 
   const Network(this.id, this.label);
   @override
   final String id;
   @override
   final String label;
+
+  bool get usesDio => this != none;
+
+  /// Data sources split into an interface and an `Impl` class (a Retrofit
+  /// client is its own implementation).
+  bool get handWritten => this != retrofit;
 }
 
 enum DataClass implements StackOption {
@@ -137,7 +148,7 @@ final class StackConfig {
   /// Packages the generated code imports, split by pubspec section.
   ({List<String> dependencies, List<String> devDependencies}) get packages {
     final deps = <String>{
-      'dio',
+      if (network.usesDio) 'dio',
       functional.id,
       'json_annotation',
       if (network == Network.retrofit) 'retrofit',

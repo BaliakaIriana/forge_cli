@@ -1,6 +1,5 @@
 import '../config/forge_config.dart';
 import '../config/layout.dart';
-import '../config/stack.dart';
 import 'name.dart';
 
 /// A generated class and the project-relative file declaring it.
@@ -82,10 +81,10 @@ final class Artifacts {
         cls, '${_dir(Layer.dataSource, feature)}/${Name(cls).snake}.dart');
   }
 
-  /// Concrete class for hand-written (Dio) data sources; the Retrofit
+  /// Concrete class of hand-written data sources (Dio, none); the Retrofit
   /// client is its own implementation.
   String dataSourceImplClass(Name feature, Name name) =>
-      config.stack.network == Network.dio
+      config.stack.network.handWritten
           ? '${dataSource(feature, name).className}Impl'
           : dataSource(feature, name).className;
 

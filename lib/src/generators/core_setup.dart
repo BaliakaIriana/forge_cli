@@ -24,7 +24,9 @@ final class CoreSetup {
       core.typedefs,
       core.taskRunner,
       if (stack.di != DependencyInjection.riverpod) core.di,
-      if (stack.di == DependencyInjection.riverpod && core.dioProvider != null)
+      if (stack.di == DependencyInjection.riverpod &&
+          stack.network.usesDio &&
+          core.dioProvider != null)
         core.dioProvider!,
       core.router,
       if (stack.router == Routing.goRouter && core.routes != null) core.routes!,

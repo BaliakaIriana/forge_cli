@@ -43,6 +43,11 @@ final class Registration {
 
   /// Riverpod: feature provider file receiving the provider.
   final String? dependenciesFile;
+
+  /// Generated implementations without dependency have a const
+  /// constructor (Blocs never do).
+  bool get isConst =>
+      dependencies.isEmpty && kind != RegistrationKind.stateHolder;
 }
 
 /// Wires generated classes into the project's DI (Strategy pattern: one
@@ -76,10 +81,12 @@ final class GetItWiring implements DiWiring {
     final args = r.dependencies
         .map((d) => d.named == null ? 'getIt()' : '${d.named}: getIt()')
         .join(', ');
+    final instance =
+        '${r.isConst ? 'const ' : ''}${r.implementation.className}';
     final factory = r.kind == RegistrationKind.stateHolder;
     final method = factory ? 'registerFactory' : 'registerLazySingleton';
     final snippet = 'getIt.$method<${r.contract.className}>(\n'
-        '  () => ${r.implementation.className}($args),\n);';
+        '  () => $instance($args),\n);';
     final anchor = switch (r.kind) {
       RegistrationKind.dataSource => Anchors.diDataSources,
       RegistrationKind.repository => Anchors.diRepositories,
@@ -125,7 +132,7 @@ final class RiverpodWiring implements DiWiring {
     }).join(', ');
     final snippet = '@Riverpod(keepAlive: true)\n'
         '${r.contract.className} ${r.contract.instanceName}(Ref ref) =>\n'
-        '    ${r.implementation.className}($args);\n';
+        '    ${r.isConst ? 'const ' : ''}${r.implementation.className}($args);\n\n';
     final imports = {
       ctx.uri(r.contract.path),
       ctx.uri(r.implementation.path),

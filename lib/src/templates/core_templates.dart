@@ -67,18 +67,10 @@ ${ctx.imports([
 typedef FutureEitherVoid = FutureEither<void>;
 ''';
 
-  String taskRunner() => '''
-${ctx.imports([
-            'dart:io',
-            'package:dio/dio.dart',
-            ctx.stack.functional.import,
-            ctx.uri(ctx.config.core.failure),
-            ctx.uri(ctx.config.core.typedefs),
-          ])}/// Runs [action] and turns any exception into a [Failure], so repositories
-/// return `Either` values instead of throwing.
-FutureEither<T> runTask<T>(Future<T> Function() action) async {
-  try {
-    return Right(await action());
+  String taskRunner() {
+    final dio = ctx.stack.network.usesDio;
+    final dioCatch = dio
+        ? '''
   } on DioException catch (error) {
     if (_isConnectivityError(error)) {
       return Left(NetworkFailure('No internet connection', error: error));
@@ -89,21 +81,40 @@ FutureEither<T> runTask<T>(Future<T> Function() action) async {
         error: error,
         statusCode: error.response?.statusCode,
       ),
-    );
+    );'''
+        : '';
+    final dioHelper = dio
+        ? '''
+
+bool _isConnectivityError(DioException error) =>
+    error.type == DioExceptionType.connectionError ||
+    error.type == DioExceptionType.connectionTimeout ||
+    error.error is SocketException;
+'''
+        : '';
+    return '''
+${ctx.imports([
+          'dart:io',
+          if (dio) 'package:dio/dio.dart',
+          ctx.stack.functional.import,
+          ctx.uri(ctx.config.core.failure),
+          ctx.uri(ctx.config.core.typedefs),
+        ])}/// Runs [action] and turns any exception into a [Failure], so repositories
+/// return `Either` values instead of throwing.
+FutureEither<T> runTask<T>(Future<T> Function() action) async {
+  try {
+    return Right(await action());$dioCatch
   } on SocketException catch (error) {
     return Left(NetworkFailure('No internet connection', error: error));
   } catch (error) {
     return Left(UnknownFailure(error.toString(), error: error));
   }
 }
-
-bool _isConnectivityError(DioException error) =>
-    error.type == DioExceptionType.connectionError ||
-    error.type == DioExceptionType.connectionTimeout ||
-    error.error is SocketException;
-''';
+$dioHelper''';
+  }
 
   String di() {
+    final dio = ctx.stack.network.usesDio;
     if (ctx.stack.di == DependencyInjection.injectable) {
       final config = ctx.config.core.di
           .split('/')
@@ -111,10 +122,12 @@ bool _isConnectivityError(DioException error) =>
           .replaceAll('.dart', '.config.dart');
       return '''
 ${ctx.imports([
-            'package:dio/dio.dart',
+            if (dio) 'package:dio/dio.dart',
             'package:get_it/get_it.dart',
             TemplateContext.injectableImport(
-              ['InjectableInit', 'lazySingleton', 'module'],
+              dio
+                  ? ['InjectableInit', 'lazySingleton', 'module']
+                  : ['InjectableInit'],
             ),
             config,
           ])}final GetIt getIt = GetIt.instance;
@@ -122,25 +135,23 @@ ${ctx.imports([
 /// Registers the app dependencies. Call once from `main()`.
 @InjectableInit()
 void configureDependencies() => getIt.init();
-
+${dio ? '''
 @module
 abstract class NetworkModule {
   @lazySingleton
   Dio get dio => Dio();
 }
-''';
+''' : ''}''';
     }
     return '''
 ${ctx.imports([
-          'package:dio/dio.dart',
-          'package:get_it/get_it.dart'
+          if (dio) 'package:dio/dio.dart',
+          'package:get_it/get_it.dart',
         ])}final GetIt getIt = GetIt.instance;
 
 /// Registers the app dependencies. Call once from `main()`.
 void configureDependencies() {
-  getIt.registerLazySingleton<Dio>(() => Dio());
-
-  ${_a(Anchors.diDataSources)}
+${dio ? '  getIt.registerLazySingleton<Dio>(() => Dio());\n\n' : ''}  ${_a(Anchors.diDataSources)}
   ${_a(Anchors.diRepositories)}
   ${_a(Anchors.diUseCases)}
   ${_a(Anchors.diBlocs)}

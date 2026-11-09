@@ -5,7 +5,7 @@ description: >-
   `nest generate` for Flutter: features, entities, models, data sources,
   repositories, use cases, blocs or Riverpod notifiers, screens and widgets,
   wired into DI and routing.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/BaliakaIriana/forge_cli
 publish_to: none
 

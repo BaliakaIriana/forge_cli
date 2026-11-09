@@ -72,16 +72,53 @@ $toEntity}
 ''';
   }
 
-  /// Retrofit client, or interface + Dio implementation.
+  /// Retrofit client, interface + Dio implementation, or interface +
+  /// client-free implementation (`network: none`).
   String dataSource(
     Artifact dataSource,
     String implClass,
     List<Operation> operations, {
     Iterable<String> imports = const [],
   }) =>
-      ctx.stack.network == Network.retrofit
-          ? _retrofit(dataSource, operations, imports)
-          : _dio(dataSource, implClass, operations, imports);
+      switch (ctx.stack.network) {
+        Network.retrofit => _retrofit(dataSource, operations, imports),
+        Network.dio => _dio(dataSource, implClass, operations, imports),
+        Network.none => _none(dataSource, implClass, operations, imports),
+      };
+
+  /// No client: the implementation declares no dependency. Inject the one
+  /// you need through its constructor, then in the DI registration.
+  String _none(
+    Artifact ds,
+    String implClass,
+    List<Operation> operations,
+    Iterable<String> imports,
+  ) {
+    final cls = ds.className;
+    final signatures = operations
+        .map((o) => '  Future<${o.remoteReturnType}> ${o.name.camel}();');
+    final bodies = operations.map((o) => '''
+  @override
+  Future<${o.remoteReturnType}> ${o.name.camel}() {
+    // TODO: implement with the client injected in the constructor.
+    throw UnimplementedError('${o.name.camel}');
+  }''');
+    return '''
+${ctx.imports([
+          if (ctx.injectable)
+            TemplateContext.injectableImport(['LazySingleton']),
+          ...imports,
+        ])}abstract interface class $cls {
+${signatures.join('\n\n')}
+}
+
+/// Add the client this data source needs (Supabase, Firebase, local
+/// database...) as a constructor parameter; DI injects it.
+${ctx.annotation('@LazySingleton(as: $cls)')}class $implClass implements $cls {
+  const $implClass();
+${bodies.isEmpty ? '' : '\n${bodies.join('\n\n')}\n'}}
+''';
+  }
 
   String _retrofit(
     Artifact ds,

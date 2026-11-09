@@ -70,9 +70,14 @@ final class GoRouterWiring implements RouteWiring {
         final inserted =
             SourceEditor.insertAtAnchor(source, Anchors.routes, snippet);
         if (inserted == null) return null;
+        // The routes class may already be in scope (direct or barrel import).
+        final routesClass = pathExpression.split('.').first;
+        final routesInScope = source.contains('$routesClass.');
         return SourceEditor.addImports(inserted, [
           ctx.uri(route.screen.path),
-          if (routesFile != null && pathExpression != "'${route.path}'")
+          if (routesFile != null &&
+              pathExpression != "'${route.path}'" &&
+              !routesInScope)
             ctx.uri(routesFile),
         ]);
       },

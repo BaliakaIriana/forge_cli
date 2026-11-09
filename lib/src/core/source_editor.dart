@@ -49,8 +49,13 @@ abstract final class SourceEditor {
     if (index < 0) return null;
     if (_containsSnippet(source, snippet)) return source;
     final indent = RegExp(r'^\s*').firstMatch(lines[index])![0]!;
-    final block =
-        snippet.trimRight().split('\n').map((l) => l.isEmpty ? l : '$indent$l');
+    final block = snippet
+        .trimRight()
+        .split('\n')
+        .map((l) => l.isEmpty ? l : '$indent$l')
+        .toList();
+    // A snippet ending with a blank line keeps one before the anchor.
+    if (snippet.endsWith('\n\n')) block.add('');
     lines.insertAll(index, block);
     return lines.join('\n');
   }

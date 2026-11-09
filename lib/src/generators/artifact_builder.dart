@@ -207,7 +207,9 @@ final class ArtifactBuilder {
         kind: RegistrationKind.dataSource,
         contract: contract,
         implementation: Artifact(implClass, contract.path),
-        dependencies: const [Dependency.dio],
+        dependencies: [
+          if (ctx.stack.network.usesDio) Dependency.dio,
+        ],
         dependenciesFile: artifacts.dependencies(feature),
       ),
     );
