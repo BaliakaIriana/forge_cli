@@ -30,7 +30,7 @@ Add it as a dev dependency of your Flutter app, from Git:
 dev_dependencies:
   forge_cli:
     git:
-      url: https://github.com/baliaka-andria/forge_cli.git
+      url: https://github.com/BaliakaIriana/forge_cli.git
       ref: v0.1.0
 ```
 
@@ -40,7 +40,7 @@ Then run it from anywhere inside the project:
 dart run forge_cli:forge <command>      # or: fvm dart run forge_cli:forge
 ```
 
-Shorter, machine-wide: `dart pub global activate --source git https://github.com/baliaka-andria/forge_cli.git`, then `forge <command>`.
+Shorter, machine-wide: `dart pub global activate --source git https://github.com/BaliakaIriana/forge_cli.git`, then `forge <command>`.
 
 ## Commands
 
