@@ -13,6 +13,9 @@ abstract interface class FileStore {
   /// Names of the direct sub-directories of [path] (empty if absent).
   List<String> subdirectories(String path);
 
+  /// Files directly in [path] ending with [extension] (e.g. `.arb`).
+  List<String> listFiles(String path, String extension);
+
   /// Every `.dart` file under [path], recursively.
   List<String> dartFiles(String path);
 }
@@ -49,6 +52,19 @@ final class DiskFileStore implements FileStore {
         .whereType<Directory>()
         .map((d) => p.basename(d.path))
         .where((name) => !name.startsWith('.'))
+        .toList()
+      ..sort();
+  }
+
+  @override
+  List<String> listFiles(String path, String extension) {
+    final dir = Directory(_abs(path));
+    if (!dir.existsSync()) return const [];
+    return dir
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.endsWith(extension))
+        .map((f) => '$path/${p.basename(f.path)}')
         .toList()
       ..sort();
   }
@@ -94,6 +110,15 @@ final class MemoryFileStore implements FileStore {
         .toList()
       ..sort();
   }
+
+  @override
+  List<String> listFiles(String path, String extension) => files.keys
+      .where((f) =>
+          f.startsWith('$path/') &&
+          !f.substring(path.length + 1).contains('/') &&
+          f.endsWith(extension))
+      .toList()
+    ..sort();
 
   @override
   List<String> dartFiles(String path) => files.keys

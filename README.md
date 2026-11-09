@@ -57,13 +57,14 @@ Shorter, machine-wide: `dart pub global activate --source git https://github.com
 | `forge g state <name> -f <feature>` | Bloc (bloc/event/state with `part`) or Riverpod notifier. `-u get_orders,delete_order` injects use cases: the first loads the state, each other gets its own event. Aliases: `bloc`, `provider`, `notifier`. |
 | `forge g screen <name> -f <feature>` | Screen providing its state holder, registered as a route. `--route /orders/:id`, `--no-route`, `--state <name>`. |
 | `forge g widget <name> -f <feature>` | Widget. `--stateful`. |
+| `forge g l10n-key <key> [text]` | Translation key added to every ARB file of `l10n.yaml`'s `arb-dir`, with `@key` placeholders metadata deduced from the template text (`{name}`, `{count, plural, ...}`). `-t fr="..." -t en="..."`, `--description`. Missing locales get the template text and a warning. No `forge.yaml` needed. |
 
 Every generator accepts `--dry-run` (`-d`, shows the plan, writes nothing) and
 `--force` (overwrite existing files). Missing arguments are prompted for in a
 terminal; `forge g` alone lets you pick the generator. Without a `forge.yaml`,
 any generator runs `forge init` first.
 
-Aliases: `g` = `generate`, `f`/`resource` = `feature`, `e`, `dto`, `ds`, `repo`/`r`, `uc`, `s`, `page`/`sc`, `w`.
+Aliases: `g` = `generate`, `f`/`resource` = `feature`, `e`, `dto`, `ds`, `repo`/`r`, `uc`, `s`, `page`/`sc`, `w`, `l10n`/`i18n`/`tr`.
 
 ## Supported stacks
 

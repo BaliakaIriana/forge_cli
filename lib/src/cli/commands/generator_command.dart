@@ -16,19 +16,27 @@ import '../toolchain.dart';
 
 /// Everything a generator needs once arguments are resolved.
 final class GeneratorInput {
-  const GeneratorInput({
+  GeneratorInput({
     required this.name,
-    required this.feature,
-    required this.builder,
+    required this.project,
     required this.plan,
     required this.prompter,
-  });
+    Name? feature,
+  }) : _feature = feature;
 
   final String name;
-  final Name feature;
-  final ArtifactBuilder builder;
+  final Project project;
   final GenerationPlan plan;
   final Prompter prompter;
+  final Name? _feature;
+
+  /// Resolved only for generators with [GeneratorCommand.usesFeature].
+  Name get feature =>
+      _feature ?? (throw StateError('This generator has no feature.'));
+
+  /// Requires a configured project ([GeneratorCommand.requiresConfig]).
+  late final ArtifactBuilder builder =
+      ArtifactBuilder(TemplateContext(project, project.config!));
 }
 
 /// Base of every `forge generate <x>` command (Template Method): resolves
@@ -36,7 +44,7 @@ final class GeneratorInput {
 /// then writes it.
 abstract class GeneratorCommand extends Command<int> {
   GeneratorCommand(this.logger, this.prompter) {
-    if (!nameIsFeature) {
+    if (usesFeature && !nameIsFeature) {
       argParser.addOption(
         'feature',
         abbr: 'f',
@@ -63,12 +71,18 @@ abstract class GeneratorCommand extends Command<int> {
   /// `forge g feature orders`: the name *is* the feature.
   bool get nameIsFeature => false;
 
+  /// Whether the artifact lives in a feature (`--feature`).
+  bool get usesFeature => true;
+
+  /// Whether `forge.yaml` is needed (runs `forge init` when missing).
+  bool get requiresConfig => true;
+
   /// Shown when the name is prompted.
   String get namePrompt;
 
   @override
-  String get invocation =>
-      'forge generate $name <name>${nameIsFeature ? '' : ' --feature <feature>'}';
+  String get invocation => 'forge generate $name <name>'
+      '${usesFeature && !nameIsFeature ? ' --feature <feature>' : ''}';
 
   void generate(GeneratorInput input);
 
@@ -79,10 +93,9 @@ abstract class GeneratorCommand extends Command<int> {
       logger.err('No pubspec.yaml found in this directory or its parents.');
       return ExitCode.usage.code;
     }
-    final project = _ensureConfig(located);
+    final project = requiresConfig ? _ensureConfig(located) : located;
     if (project == null) return ExitCode.config.code;
-    final config = project.config!;
-    final problems = config.stack.validate();
+    final problems = project.config?.stack.validate() ?? const [];
     if (problems.isNotEmpty) {
       logger.err('Invalid ${ForgeConfig.fileName}: ${problems.join('; ')}');
       return ExitCode.config.code;
@@ -90,16 +103,18 @@ abstract class GeneratorCommand extends Command<int> {
 
     final args = argResults!;
     final rawName = args.rest.firstOrNull ?? _promptRequired(namePrompt);
-    final feature = nameIsFeature
-        ? Name(rawName)
-        : _resolveFeature(config, project, args.option('feature'));
+    final feature = !usesFeature
+        ? null
+        : nameIsFeature
+            ? Name(rawName)
+            : _resolveFeature(project.config!, project, args.option('feature'));
 
     final plan = GenerationPlan(project.store);
     generate(
       GeneratorInput(
         name: rawName,
+        project: project,
         feature: feature,
-        builder: ArtifactBuilder(TemplateContext(project, config)),
         plan: plan,
         prompter: prompter,
       ),
@@ -111,6 +126,11 @@ abstract class GeneratorCommand extends Command<int> {
     if (written > 0 && plan.usesCodegen && !dryRun) {
       logger.info('\nGenerated code uses build_runner. Run:\n'
           '  ${Toolchain.of(project).buildRunner}');
+    }
+    if (written > 0 && !dryRun) {
+      for (final hint in plan.hints) {
+        logger.info('\n$hint');
+      }
     }
     return ExitCode.success.code;
   }

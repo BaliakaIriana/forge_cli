@@ -25,10 +25,14 @@ final class GenerationPlan {
   final FileStore _store;
   final Map<String, FileChange> _changes = {};
   final List<String> _notes = [];
+  final List<String> _hints = [];
   bool _usesCodegen = false;
 
   Iterable<FileChange> get changes => _changes.values;
   List<String> get notes => List.unmodifiable(_notes);
+
+  /// Next steps shown after a successful write.
+  List<String> get hints => List.unmodifiable(_hints);
 
   /// Whether a generated file needs `build_runner` (part directives).
   bool get usesCodegen => _usesCodegen;
@@ -70,5 +74,9 @@ final class GenerationPlan {
   }
 
   void note(String message) => _notes.add(message);
+  void hint(String message) {
+    if (!_hints.contains(message)) _hints.add(message);
+  }
+
   void markCodegen() => _usesCodegen = true;
 }

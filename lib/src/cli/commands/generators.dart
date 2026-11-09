@@ -1,8 +1,12 @@
 import 'package:mason_logger/mason_logger.dart';
 
+import 'package:args/command_runner.dart';
+
 import '../../core/artifacts.dart';
 import '../../core/name.dart';
+import '../../generators/l10n_key_builder.dart';
 import '../prompter.dart';
+import '../toolchain.dart';
 import 'generator_command.dart';
 
 const _fieldsHelp = 'Fields as name:Type pairs, comma separated '
@@ -24,6 +28,7 @@ List<GeneratorCommand> generatorCommands(Logger logger, Prompter prompter) => [
       StateGenerator(logger, prompter),
       ScreenGenerator(logger, prompter),
       WidgetGenerator(logger, prompter),
+      L10nKeyGenerator(logger, prompter),
     ];
 
 final class FeatureGenerator extends GeneratorCommand {
@@ -294,4 +299,92 @@ final class WidgetGenerator extends GeneratorCommand {
         Name(input.name),
         stateful: argResults!.flag('stateful'),
       );
+}
+
+final class L10nKeyGenerator extends GeneratorCommand {
+  L10nKeyGenerator(super.logger, super.prompter) {
+    argParser
+      ..addMultiOption(
+        'text',
+        abbr: 't',
+        splitCommas: false,
+        help: 'Message per locale, as locale=text (repeatable): '
+            '-t fr="Bonjour {name}" -t en="Hello {name}". A second positional '
+            'argument is the template-locale text.',
+      )
+      ..addOption('description',
+          help: 'Description stored in @key (template).');
+  }
+
+  @override
+  String get name => 'l10n-key';
+  @override
+  List<String> get aliases => const ['l10n', 'i18n', 'tr'];
+  @override
+  String get description =>
+      'Translation key added to every ARB file (gen-l10n), with placeholders '
+      'metadata deduced from {name} / {count, plural, ...}.';
+  @override
+  bool get usesFeature => false;
+  @override
+  bool get requiresConfig => false;
+  @override
+  String get namePrompt => 'Key (e.g. orders_empty_title)';
+  @override
+  String get invocation =>
+      'forge generate l10n-key <key> [template text] [-t <locale>=<text> ...]';
+
+  @override
+  void generate(GeneratorInput input) {
+    final args = argResults!;
+    final key = Name(input.name).camel;
+    final builder = L10nKeyBuilder(input.project.store);
+    final files = builder.arbFiles();
+    final template = files.where((f) => f.isTemplate).firstOrNull;
+
+    final messages = <String, String>{};
+    for (final entry in args.multiOption('text')) {
+      final separator = entry.indexOf('=');
+      if (separator <= 0) {
+        throw UsageException(
+            '--text expects locale=text, got "$entry".', usage);
+      }
+      messages[entry.substring(0, separator).trim()] =
+          entry.substring(separator + 1);
+    }
+    if (template != null && args.rest.length > 1) {
+      messages.putIfAbsent(template.locale, () => args.rest[1]);
+    }
+
+    var description = args.option('description');
+    if (input.prompter.interactive && template != null) {
+      for (final file in files) {
+        if (messages.containsKey(file.locale)) continue;
+        final text = input.prompter.ask(
+          '${file.locale} text${file.isTemplate ? ' (template)' : ''}',
+          defaultValue: file.isTemplate ? null : messages[template.locale],
+        );
+        if (text.isNotEmpty) messages[file.locale] = text;
+      }
+      description ??= input.prompter.ask('Description (optional)');
+    }
+    if (template != null && !messages.containsKey(template.locale)) {
+      throw UsageException(
+        'Missing the ${template.locale} (template) text: '
+        '-t ${template.locale}="...".',
+        usage,
+      );
+    }
+
+    builder.add(
+      input.plan,
+      key: key,
+      messages: messages,
+      description: description,
+      force: args.flag('force'),
+    );
+    final flutter = Toolchain.of(input.project).flutter;
+    input.plan.hint('Regenerate localizations: $flutter gen-l10n\n'
+        'Use it: ${builder.settings.outputClass}.of(context)!.$key');
+  }
 }

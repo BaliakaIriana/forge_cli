@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `forge g l10n-key`: adds a key to every ARB file, placeholders metadata
+  deduced from the template message; text-level edits keep the ARB layout.
+
 ## 0.1.0
 
 - `forge init`: stack and layout detection, `forge.yaml`, core file scaffolding, anchors.
