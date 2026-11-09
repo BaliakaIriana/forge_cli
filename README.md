@@ -22,6 +22,17 @@ $ forge g feature orders --fields "id:String,reference:String,total:double,note:
   update  lib/src/routing/app_router.dart (route /orders)
 ```
 
+## Documentation
+
+Full how-to guide in [`docs/`](docs/README.md):
+[getting started](docs/getting-started.md) ·
+[commands](docs/commands.md) ·
+[configuration](docs/configuration.md) ·
+[stacks](docs/stacks.md) ·
+[wiring](docs/wiring.md) ·
+[localization](docs/localization.md) ·
+[troubleshooting](docs/troubleshooting.md).
+
 ## Install
 
 Add it as a dev dependency of your Flutter app, from Git:
